@@ -23,6 +23,7 @@ model User {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   resumes    Resume[]
+  jobs        Job[]
 }
 
 enum JobType {
@@ -45,12 +46,16 @@ model Job {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   createdBy       String
+
+  // Relations
+  user User @relation(fields: [createdBy], references: [id])
 }
 
 model Resume {
   id          String   @id @default(uuid())
+  name        String
   userId      String
-  parsedData  String   // text for now, NLP extracted data (name, skills, experience, etc.)
+  parsedData  Json   // NLP extracted data (name, skills, experience, etc.)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -25,8 +25,7 @@ export class ResumeController {
     if (file.mimetype !== 'application/pdf') {
       throw new Error('Only PDF files are allowed!');
     }
-    const name = file.originalname;
-    console.log(name);
+
     const resume: Resume = await this.resumeService.uploadResume(
       user.id,
       file,
