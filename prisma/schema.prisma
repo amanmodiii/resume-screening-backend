@@ -7,46 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 model User {
   id         String           @id @default(uuid())
   name       String
   email      String           @unique
   password   String
   role       Role
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-
-  // Relations
-  applicantProfile ApplicantProfile?
-  recruiterProfile RecruiterProfile?
-}
-
-enum Role {
-  APPLICANT
-  RECRUITER
-}
-
-model ApplicantProfile {
-  userId       String  @id
   bio          String?
   portfolioUrl String?
-
-  // Relations
-  user User @relation(fields: [userId], references: [id])
-  applications JobApplication[]
-  resume Resume[]
-}
-
-model RecruiterProfile {
-  userId       String  @id
-  companyName  String
-  companyUrl   String?
-  designation  String
-  industry     String
-
-  // Relations
-  user User @relation(fields: [userId], references: [id])
-  jobs Job[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  resumes    Resume[]
 }
 
 enum JobType {
@@ -66,52 +42,18 @@ model Job {
   location        String?
   salaryRange     String?         // e.g., "$50k - $80k"
   jobType         JobType
-  recruiterId     String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-
-  // Relations
-  recruiter       RecruiterProfile            @relation(fields: [recruiterId], references: [userId])
-  applications    JobApplication[]
-
-  @@index([recruiterId])
-}
-
-enum ApplicationStatus {
-  PENDING
-  SHORTLISTED
-  INTERVIEW_SCHEDULED
-  HIRED
-  REJECTED
-}
-
-model JobApplication {
-  id             String     @id @default(uuid())
-  applicantId    String
-  jobId          String
-  resumeId       String
-  status         ApplicationStatus @default(PENDING)
-  aiMatchScore   Float?  // AI-generated score based on resume-job match
-  coverLetter    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  applicant      ApplicantProfile      @relation(fields: [applicantId], references: [userId])
-  job           Job       @relation(fields: [jobId], references: [id])
-  resume       Resume     @relation(fields: [resumeId], references: [id])
-
-  @@unique([applicantId, jobId]) // Ensures an applicant applies only once per job
+  createdBy       String
 }
 
 model Resume {
   id          String   @id @default(uuid())
-  applicantId String
-  parsedData  Json?    // NLP extracted data (name, skills, experience, etc.)
-  resumeScore Float?   // AI-calculated resume quality score
+  userId      String
+  parsedData  String   // text for now, NLP extracted data (name, skills, experience, etc.)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  applicant   ApplicantProfile      @relation(fields: [applicantId], references: [userId])
-  applications JobApplication[]
+  user   User      @relation(fields: [userId], references: [id])
 }

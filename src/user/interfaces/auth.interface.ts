@@ -9,19 +9,11 @@ export interface LoginUser {
   password: string;
 }
 
-export interface RegisterRecruiter {
-  name: string;
-  email: Email;
-  password: string;
-  companyName: string;
-  url?: string;
-  designation: string;
-  industry: string;
-}
+export type UserRole = 'ADMIN' | 'USER';
 
-export interface RegisterApplicant {
+export interface RegisterUser {
   name: string;
-  email: collegeEmail;
+  email: string;
   password: string;
   bio?: string;
   portfolioUrl?: string;

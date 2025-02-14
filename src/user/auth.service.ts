@@ -3,16 +3,18 @@ import {
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import {
   LoginUser,
-  RegisterApplicant,
-  RegisterRecruiter,
+  RegisterUser,
+  UserRole,
 } from './interfaces/auth.interface';
 import { v4 as uuidv4 } from 'uuid';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +23,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async registerApplicant(body: RegisterApplicant) {
+  async signUp(body: RegisterUser, role: UserRole) {
     try {
       // Check if email already exists
       const existingUser = await this.prisma.user.findUnique({
@@ -38,13 +40,7 @@ export class AuthService {
           name: body.name,
           email: body.email,
           password: hashedPassword,
-          role: 'APPLICANT',
-        },
-      });
-
-      await this.prisma.applicantProfile.create({
-        data: {
-          userId: user.id,
+          role: role,
           bio: body.bio,
           portfolioUrl: body.portfolioUrl,
         },
@@ -52,44 +48,7 @@ export class AuthService {
 
       return user;
     } catch (error) {
-      throw new InternalServerErrorException('Failed to register applicant');
-    }
-  }
-
-  async registerRecruiter(body: RegisterRecruiter) {
-    try {
-      // Check if email already exists
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: body.email },
-      });
-      if (existingUser) {
-        throw new BadRequestException('Email is already in use');
-      }
-
-      const hashedPassword = await bcrypt.hash(body.password, 10);
-      const user = await this.prisma.user.create({
-        data: {
-          id: uuidv4(),
-          name: body.name,
-          email: body.email,
-          password: hashedPassword,
-          role: 'RECRUITER',
-        },
-      });
-
-      await this.prisma.recruiterProfile.create({
-        data: {
-          userId: user.id,
-          companyName: body.companyName,
-          companyUrl: body.url,
-          designation: body.designation,
-          industry: body.industry,
-        },
-      });
-
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to register recruiter');
+      throw new InternalServerErrorException('Failed to register user');
     }
   }
 
@@ -120,6 +79,21 @@ export class AuthService {
       throw new InternalServerErrorException(
         'Login failed due to an unexpected error',
       );
+    }
+  }
+
+  async validateToken(token: string): Promise<User> {
+    try {
+      const decoded = this.jwtService.verify(token);
+      const user = await this.prisma.user.findUnique({
+        where: { id: decoded.sub },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }
