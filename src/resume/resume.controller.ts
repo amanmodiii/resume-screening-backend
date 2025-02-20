@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   UploadedFile,
   UseGuards,
@@ -26,12 +27,13 @@ export class ResumeController {
       throw new Error('Only PDF files are allowed!');
     }
 
-    const resume: Resume = await this.resumeService.uploadResume(
-      user.id,
-      file,
-    );
+    const resume: Resume = await this.resumeService.uploadResume(user.id, file);
     return resume;
+  }
 
-    //implement parsing logic here
+  @UseGuards(AuthGuard)
+  @Get()
+  async getResumes(@GetUser() user: User): Promise<Resume[]> {
+    return this.resumeService.getResumes(user.id);
   }
 }
